@@ -23,7 +23,6 @@ def inicio():
 
 # RF1 - Crear reseña
 @app.post('/resenas')
-@app.post('/resenas')
 def crear_resena(datos: dict = Body(...)):
     datos["fecha_creacion"] = datetime.utcnow()
     datos["estado"] = "publicada"
