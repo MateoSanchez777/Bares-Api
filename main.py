@@ -44,12 +44,11 @@ def editar_resena(resena_id: str, datos: dict = Body(...)):
     )
     return {'mensaje': 'Resena actualizada'}
 
-# RF3 - Eliminar reseña (cliente)
 @app.delete('/resenas/{resena_id}')
 def eliminar_resena(resena_id: str):
     db["resenas"].update_one(
         {"_id_oracle": resena_id},
-        {"$set": {"estado": "Eliminada"}}
+        {"$set": {"estado": "eliminada"}}
     )
     return {'mensaje': 'Resena eliminada'}
 
