@@ -13,39 +13,110 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-#os.environ para despliegue. Descomente cuando ya probó todo local.
 client = MongoClient(os.environ["MONGO_URI"])
 db = client["ISIS2304F29202610"]
-
 
 @app.get("/")
 def inicio():
     return {"estado": "API funcionando correctamente"}
 
-@app.get('/bares/{bar_id}/comentarios')
-def get_comentarios(bar_id: int):
-    comentarios = list(db["comentarios_bares"].find({"bar_id": bar_id}, {"_id": 0}))
-    return comentarios
+# RF1 - Crear reseña
+@app.post('/resenas')
+def crear_resena(datos: dict = Body(...)):
+    datos["fecha_creacion"] = datetime.now().isoformat()
+    datos["estado"] = "Publicada"
+    datos["votos_utiles"] = 0
+    datos["destacada"] = False
+    datos["respuesta_administrador"] = None
+    datos["votos_utiles_lista"] = []
+    db["resenas"].insert_one(datos)
+    return {'mensaje': 'Resena guardada'}
 
-@app.post('/bares/{bar_id}/comentarios')
-def post_comentario(bar_id: int, datos: dict = Body(...)):
-    datos["bar_id"] = bar_id
-    datos["fecha"] = datetime.now().isoformat()
+# RF2 - Editar reseña
+@app.put('/resenas/{resena_id}')
+def editar_resena(resena_id: str, datos: dict = Body(...)):
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$set": {
+            "calificacion": datos["calificacion"],
+            "comentario": datos["comentario"]
+        }}
+    )
+    return {'mensaje': 'Resena actualizada'}
 
-    db["comentarios_bares"].insert_one(datos)
+# RF3 - Eliminar reseña (cliente)
+@app.delete('/resenas/{resena_id}')
+def eliminar_resena(resena_id: str):
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$set": {"estado": "Eliminada"}}
+    )
+    return {'mensaje': 'Resena eliminada'}
 
-    return {'mensaje': 'Comentario guardado'}
+# RF4 - Consultar reseñas de un hotel
+@app.get('/hoteles/{hotel_id}/resenas')
+def get_resenas_hotel(hotel_id: str):
+    resenas = list(db["resenas"].find(
+        {"hotel_id": hotel_id, "estado": "Publicada"},
+        {"_id": 0}
+    ).sort("fecha_creacion", -1))
+    return resenas
 
-@app.get('/bares/{bar_id}/eventos')
-def get_eventos(bar_id: int):
-    eventos = list(db["eventos"].find({"bar_id": bar_id}, {"_id": 0}))
-    return eventos
+# RF5 - Marcar como útil
+@app.post('/resenas/{resena_id}/util')
+def marcar_util(resena_id: str, datos: dict = Body(...)):
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$inc": {"votos_utiles": 1},
+         "$push": {"votos_utiles_lista": {
+             "cliente_id": datos["cliente_id"],
+             "fecha": datetime.now().isoformat()
+         }}}
+    )
+    return {'mensaje': 'Voto registrado'}
 
-@app.post('/bares/{bar_id}/eventos')
-def post_evento(bar_id: int, datos: dict):
-    datos['bar_id'] = bar_id
-    datos['fecha_creacion'] = datetime.now().isoformat()
-    db["eventos"].insert_one(datos)
-    return {'mensaje': 'Evento guardado'}
+# RF6 - Historial de reseñas de un cliente
+@app.get('/clientes/{cliente_id}/resenas')
+def get_resenas_cliente(cliente_id: str):
+    resenas = list(db["resenas"].find(
+        {"cliente_id": cliente_id},
+        {"_id": 0}
+    ).sort("fecha_creacion", -1))
+    return resenas
 
+# RF7 - Responder reseña (admin)
+@app.put('/resenas/{resena_id}/respuesta')
+def responder_resena(resena_id: str, datos: dict = Body(...)):
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$set": {
+            "respuesta_administrador": {
+                "respuesta": datos["respuesta"],
+                "fecha_respuesta": datetime.now().isoformat()
+            }
+        }}
+    )
+    return {'mensaje': 'Respuesta guardada'}
+
+# RF8 - Eliminar reseña (admin)
+@app.delete('/resenas/{resena_id}/admin')
+def eliminar_resena_admin(resena_id: str):
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$set": {"estado": "Eliminada"}}
+    )
+    return {'mensaje': 'Resena eliminada por admin'}
+
+# RF9 - Destacar reseña
+@app.put('/resenas/{resena_id}/destacar')
+def destacar_resena(resena_id: str, datos: dict = Body(...)):
+    db["resenas"].update_many(
+        {"hotel_id": datos["hotel_id"]},
+        {"$set": {"destacada": False}}
+    )
+    db["resenas"].update_one(
+        {"_id_oracle": resena_id},
+        {"$set": {"destacada": True}}
+    )
+    return {'mensaje': 'Resena destacada'}
 
