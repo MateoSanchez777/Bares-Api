@@ -33,10 +33,10 @@ def crear_resena(datos: dict = Body(...)):
     return {'mensaje': 'Resena guardada'}
 
 # RF2 - Editar reseña
-@app.put('/resenas/{resena_id}')
-def editar_resena(resena_id: str, datos: dict = Body(...)):
+@app.put('/resenas/por-reserva/{reserva_id}')
+def editar_resena_por_reserva(reserva_id: str, datos: dict = Body(...)):
     db["resenas"].update_one(
-        {"_id_oracle": resena_id},
+        {"reserva_id": reserva_id},
         {"$set": {
             "calificacion": datos["calificacion"],
             "comentario": datos["comentario"]
@@ -44,10 +44,10 @@ def editar_resena(resena_id: str, datos: dict = Body(...)):
     )
     return {'mensaje': 'Resena actualizada'}
 
-@app.delete('/resenas/{resena_id}')
-def eliminar_resena(resena_id: str):
+@app.delete('/resenas/por-reserva/{reserva_id}')
+def eliminar_resena_por_reserva(reserva_id: str):
     db["resenas"].update_one(
-        {"_id_oracle": resena_id},
+        {"reserva_id": reserva_id},
         {"$set": {"estado": "eliminada"}}
     )
     return {'mensaje': 'Resena eliminada'}
