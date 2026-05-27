@@ -85,13 +85,15 @@ def get_resenas_cliente(cliente_id: str):
 
 # RF7 - Responder reseña (admin)
 @app.put('/resenas/{resena_id}/respuesta')
-def responder_resena(resena_id: str, datos: dict = Body(...)):
+@app.put('/resenas/por-reserva/{reserva_id}/respuesta')
+def responder_resena(reserva_id: str, datos: dict = Body(...)):
     db["resenas"].update_one(
-        {"_id_oracle": resena_id},
+        {"reserva_id": reserva_id},
         {"$set": {
             "respuesta_administrador": {
                 "respuesta": datos["respuesta"],
-                "fecha_respuesta": datetime.now().isoformat()
+                "administrador_id": datos["administrador_id"],
+                "fecha_respuesta": datetime.utcnow()
             }
         }}
     )
@@ -107,14 +109,10 @@ def eliminar_resena_admin(resena_id: str):
     return {'mensaje': 'Resena eliminada por admin'}
 
 # RF9 - Destacar reseña
-@app.put('/resenas/{resena_id}/destacar')
-def destacar_resena(resena_id: str, datos: dict = Body(...)):
-    db["resenas"].update_many(
-        {"hotel_id": datos["hotel_id"]},
-        {"$set": {"destacada": False}}
-    )
+@app.put('/resenas/por-reserva/{reserva_id}/destacar')
+def destacar_resena(reserva_id: str):
     db["resenas"].update_one(
-        {"_id_oracle": resena_id},
+        {"reserva_id": reserva_id},
         {"$set": {"destacada": True}}
     )
     return {'mensaje': 'Resena destacada'}
