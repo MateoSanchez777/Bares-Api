@@ -23,13 +23,13 @@ def inicio():
 
 # RF1 - Crear reseña
 @app.post('/resenas')
+@app.post('/resenas')
 def crear_resena(datos: dict = Body(...)):
-    datos["fecha_creacion"] = datetime.now().isoformat()
-    datos["estado"] = "Publicada"
-    datos["votos_utiles"] = 0
+    datos["fecha_creacion"] = datetime.utcnow()
+    datos["estado"] = "publicada"
+    datos["votos_utiles"] = []
     datos["destacada"] = False
-    datos["respuesta_administrador"] = None
-    datos["votos_utiles_lista"] = []
+    datos["respuesta_administrador"] = {}
     db["resenas"].insert_one(datos)
     return {'mensaje': 'Resena guardada'}
 
